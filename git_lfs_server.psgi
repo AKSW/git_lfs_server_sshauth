@@ -7,6 +7,7 @@ use Plack::Builder;
 use Plack::Util;
 use Crypt::PK::ECC;
 use Crypt::JWT qw(encode_jwt decode_jwt);
+use Digest::SHA;
 use Scope::Guard 'guard';
 use Try::Tiny;
 use JSON::PP;
@@ -280,6 +281,7 @@ my $app = sub {
 	my $temp_path = join '.', "$temp_base/$oid", refaddr($id);
 	$success = try { make_path($temp_base); 1; };
 	return storage_error unless $success;
+	my $cksum = Digest::SHA->new("SHA-256");
 	my $total = 0;
 	{
 	    open my $out, '>:raw', $temp_path
@@ -298,9 +300,12 @@ my $app = sub {
 		}
 		$out->print($input)
 		    or return storage_error;
+		$cksum->add($input);
 		$input = '';
 	    }
 	}
+	return invalid_data
+	    unless $cksum->hexdigest eq $oid;
 	my $base = "$storage_path/store/$project/$p1/$p2";
 	my $path = "$base/$oid";
 	$success = try { make_path($base); 1; };
