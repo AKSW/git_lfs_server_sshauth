@@ -116,7 +116,7 @@ my $app = sub {
 	my $domain = $req->user;
 	return not_found unless defined $project;
 	my $script_path = $req->script_name || '/';
-	$project = "/$project" =~ s{^\Q$script_path/}{}r;
+	$project = "/$project" =~ s{^/?\Q$script_path/}{}r;
 
 	unless (length $user and length $domain and length $project) {
 	    return not_found;
